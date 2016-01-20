@@ -4,7 +4,7 @@ This tutorial goes over how to process a single landsat image on a single machin
 We will create a server that will serve out tiles onto a web map that represent an NDVI calculation on our image.
 The calculation of the NDVI and the rendering of the PNG tile will be dynamic and happen per tile request.
 
-![Sample NDVI thumbail](https://raw.githubusercontent.com/geotrellis/geotrellis-landsat-tutorial/sample-ndvi-thumbnail.png)
+![Sample NDVI thumbail](https://raw.githubusercontent.com/geotrellis/geotrellis-landsat-tutorial/master/sample-ndvi-thumbnail.png)
 
 ### Download a Landsat image
 Download this landsat image: https://s3.amazonaws.com/geotrellis-sample-datasets/landsat/LC80140322014139LGN00.tar.bz
