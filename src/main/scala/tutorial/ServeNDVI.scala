@@ -4,7 +4,10 @@ import geotrellis.raster._
 import geotrellis.raster.io.geotiff._
 import geotrellis.raster.render._
 import geotrellis.raster.resample._
-import geotrellis.spark.io.slippy._
+
+import geotrellis.spark._
+import geotrellis.spark.io.file._
+import geotrellis.spark.io.avro.codecs._
 
 import geotrellis.vector._
 
@@ -18,12 +21,10 @@ import scala.concurrent._
 import com.typesafe.config.ConfigFactory
 
 object ServeNDVI {
-  val tilesPath = new java.io.File("data/tiles").getAbsolutePath
+  val catalogPath = new java.io.File("data/catalog").getAbsolutePath
 
-  // Create a reader that will read in the geotiff tiles we produced in the LocalSparkExample.
-  val reader = new FileSlippyTileReader[MultiBandTile](tilesPath)({ (key, bytes) =>
-    MultiBandGeoTiff(bytes).tile
-  })
+  // Create a reader that will read in the indexed tiles we produced in IngestImage.
+  val reader = FileTileReader[SpatialKey, MultiBandTile](catalogPath)
 
   def main(args: Array[String]): Unit = {
     implicit val system = akka.actor.ActorSystem("tutorial-system")
@@ -43,7 +44,7 @@ class NDVIServiceActor extends Actor with HttpService {
   def actorRefFactory = context
   def receive = runRoute(root)
 
-  val colorBreaks = 
+  val colorBreaks =
     ColorBreaks.fromStringDouble(ConfigFactory.load().getString("tutorial.colorbreaks")).get
 
   def root =
@@ -52,8 +53,8 @@ class NDVIServiceActor extends Actor with HttpService {
         complete {
           future {
 
-            // Read in the geotiff tile at the given z/x/y coordinates.
-            val tile = ServeNDVI.reader.read(zoom, x, y)
+            // Read in the tile at the given z/x/y coordinates.
+            val tile = ServeNDVI.reader.read(LayerId("landsat",zoom)).read(x, y)
 
             // Compute the NDVI
             val ndvi =

@@ -4,11 +4,15 @@ import geotrellis.raster._
 import geotrellis.raster.io.geotiff._
 import geotrellis.raster.render._
 import geotrellis.raster.resample._
+import geotrellis.raster.reproject._
 import geotrellis.proj4._
 
 import geotrellis.spark._
 import geotrellis.spark.io.hadoop._
-import geotrellis.spark.io.slippy._
+import geotrellis.spark.io.file._
+import geotrellis.spark.io.index._
+import geotrellis.spark.io.avro.codecs._
+import geotrellis.spark.io.json._
 import geotrellis.spark.ingest._
 import geotrellis.spark.reproject._
 import geotrellis.spark.tiling._
@@ -19,9 +23,11 @@ import geotrellis.vector._
 import org.apache.spark._
 import org.apache.spark.rdd._
 
-object TileGeoTiff {
-  val inputPath = fullPath("data/landsat-tiles")
-  val outputPath = fullPath("data/tiles")
+import java.io.File
+
+object IngestImage {
+  val inputPath = "file://" + new File("data/r-nir.tif").getAbsolutePath
+  val outputPath = "data/catalog"
 
   def main(args: Array[String]): Unit = {
     // Setup Spark to use Kryo serializer.
@@ -48,40 +54,36 @@ object TileGeoTiff {
   def fullPath(path: String) = new java.io.File(path).getAbsolutePath
 
   def run(implicit sc: SparkContext) = {
+    // Read the geotiff in as a single image RDD,
+    // using a method implicitly added to SparkContext by
+    // an implicit class available via the
+    // "import geotrellis.spark.io.hadoop._ " statement.
+    val inputRdd = sc.hadoopMultiBandGeoTiffRDD(inputPath)
+
+    // Use the "RasterMetaData.fromRdd" call to find the zoom
+    // level that the closest match to the resolution of our source image,
+    // and derive information such as the full bounding box and data type.
+    val (_, rasterMetaData) =
+      RasterMetaData.fromRdd(inputRdd, FloatingLayoutScheme(512))
+
+    // Use the Tiler to cut our tiles into tiles that are index by the z/x/y map coordinates.
+    val tiled: RDD[(SpatialKey, MultiBandTile)] = inputRdd.tileToLayout(rasterMetaData, Bilinear)
+
     // We'll be tiling the images using a zoomed layout scheme
     // in the web mercator format (which fits the slippy map tile specification).
     // We'll be creating 256 x 256 tiles.
     val layoutScheme = ZoomedLayoutScheme(WebMercator, tileSize = 256)
 
-    // Read the geotiff tiles in as an RDD,
-    // using a method implicitly added to SparkContext by
-    // an implicit class available via the
-    // "import geotrellis.spark.io.hadoop._ " statement.
-    val inputTiles = sc.hadoopMultiBandGeoTiffRDD(inputPath)
+    // We need to reproject the tiles to WebMercator
+    val (zoom, reprojected) = MultiBandRasterRDD(tiled, rasterMetaData).reproject(WebMercator, layoutScheme, Bilinear)
 
-    // Use the "RasterMetaData.fromRdd" call to find the zoom
-    // level that the closest match to the resolution of our source images,
-    // and derive information such as the full bounding box and data type.
-    val (zoom, rasterMetaData) =
-      RasterMetaData.fromRdd(inputTiles, WebMercator, layoutScheme)(_.projectedExtent.extent)
-
-    // Use the Tiler to cut our tiles into tiles that are index by the z/x/y slippy map coordinates.
-    val tiled: RDD[(SpatialKey, MultiBandTile)] = Tiler(inputTiles, rasterMetaData, Bilinear)
+    // Create the writer that we will use to store the tiles in the local catalog.
+    val writer = FileLayerWriter[SpatialKey, MultiBandTile, RasterMetaData](outputPath, ZCurveKeyIndexMethod)
 
     // Pyramiding up the zoom levels, write our tiles out to the local file system.
     val writeOp =
-      Pyramid.upLevels(new MultiBandRasterRDD(tiled, rasterMetaData), layoutScheme, zoom) { (rdd, z) =>
-        val md = rdd.metaData
-
-        val writer = new HadoopSlippyTileWriter[MultiBandTile](outputPath, "tif")({ (key, tile) =>
-          val extent = md.mapTransform(key)
-          MultiBandGeoTiff(tile, extent, WebMercator).toByteArray
-        })
-        new MultiBandRasterRDD(writer.setupWrite(z, rdd), md)
+      Pyramid.upLevels(reprojected, layoutScheme, zoom) { (rdd, z) =>
+        writer.write(LayerId("landsat", z), rdd)
       }
-
-    // We've set up a set of Spark "transformations", but need to call an "action" to kick off the work.
-    // An empty foreach call is enough to set the processing in motion.
-    writeOp.foreach { x => }
   }
 }

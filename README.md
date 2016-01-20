@@ -35,46 +35,21 @@ Select the `tutorial.CreateNDVIPng` to run.
 
 This will produce `data/ndvi.png`
 
-### Preprocessing our data with GDAL
+### Ingest the multiband geotiff into a GeoTrellis catalog.
 
-We want to use the [GDAL](http://www.gdal.org/) library to do some preproccessing of our data
+This step will ingest the multiband image we made a previous step into a indexed tile set that GeoTrellis can quickly read data out of.
+We'll ingest it as WebMercator tiles, where the tiles are cut according to the
+[Slippy Map](http://wiki.openstreetmap.org/wiki/Slippy_Map) tile coordinate representation, at multiple zoom levels.
 
-#### Reproject our image using gdalwarp
-
-First, we want to reproject our data into "web mercator" (EPSG:3857)
-
-In the `data` directory:
-
-```console
-> gdalwarp -t_srs EPSG:3857 r-nir.tif r-nir-wm.tif
-```
-
-#### Tile out the R and NIR bands with gdal_retile.py
-
-We'll want to work with smaller tiles of our image when working with spark.
-Tile them out using [gdal_retile.py](http://www.gdal.org/gdal_retile.html)
-
-In the `data` directory:
-
-```console
-> mkdir landsat-tiles
-> gdal_retile.py -ps 512 512 -targetDir landsat-tiles/ r-nir-wm.tif
-```
-
-### Transform the tiled image into z/x/y indexed GeoTiffs.
-
-This step will transform the tiles we made last step into a set of GeoTiffs representing a version of the raster in GeoTiffs
-according to the [Slippy Map](http://wiki.openstreetmap.org/wiki/Slippy_Map) tile coordinate representation, at multiple zoom levels.
-
-The code is in the `src/main/scala/tutorial/TileGeoTiff.scala` file.
+The code is in the `src/main/scala/tutorial/IngestImage.scala` file.
 
 ```console
 > ./sbt run
 ```
 
-Select the `tutorial.TileGeoTiff` to run.
+Select the `tutorial.IngestImage` to run.
 
-Tiles will be generated in the `data/tiles` directory.
+Tiles will be generated in the `data/catalog` directory.
 
 ### Serve out dynamically created NDVI images using Spray
 
@@ -88,4 +63,4 @@ The code is located in the `src/main/scala/tutorial/ServeNDVI.scala` file.
 
 Select the `tutorial.ServeNDVI` to run.
 
-You can either go tonow open `static/index.html` and see our NDVI tiles on a web map.
+You can now open `static/index.html` and see our NDVI tiles on a web map.
