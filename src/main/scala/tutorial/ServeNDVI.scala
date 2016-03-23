@@ -6,6 +6,7 @@ import geotrellis.raster.render._
 import geotrellis.raster.resample._
 
 import geotrellis.spark._
+import geotrellis.spark.io._
 import geotrellis.spark.io.file._
 import geotrellis.spark.io.avro.codecs._
 
@@ -24,7 +25,7 @@ object ServeNDVI {
   val catalogPath = new java.io.File("data/catalog").getAbsolutePath
 
   // Create a reader that will read in the indexed tiles we produced in IngestImage.
-  val reader = FileTileReader[SpatialKey, MultiBandTile](catalogPath)
+  val reader = FileTileReader[SpatialKey, MultibandTile](catalogPath)
 
   def main(args: Array[String]): Unit = {
     implicit val system = akka.actor.ActorSystem("tutorial-system")
@@ -44,8 +45,8 @@ class NDVIServiceActor extends Actor with HttpService {
   def actorRefFactory = context
   def receive = runRoute(root)
 
-  val colorBreaks =
-    ColorBreaks.fromStringDouble(ConfigFactory.load().getString("tutorial.colorbreaks")).get
+  val colorMap =
+    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.colormap")).get
 
   def root =
     pathPrefix(IntNumber / IntNumber / IntNumber) { (zoom, x, y) =>
@@ -54,20 +55,28 @@ class NDVIServiceActor extends Actor with HttpService {
           future {
 
             // Read in the tile at the given z/x/y coordinates.
-            val tile = ServeNDVI.reader.read(LayerId("landsat",zoom)).read(x, y)
-
-            // Compute the NDVI
-            val ndvi =
-              tile.convert(TypeDouble).combineDouble(0, 1) { (r, ir) =>
-                if(isData(r) && isData(ir)) {
-                  (ir - r) / (ir + r)
-                } else {
-                  Double.NaN
-                }
+            val tileOpt: Option[MultibandTile] =
+              try {
+                Some(ServeNDVI.reader.read(LayerId("landsat",zoom)).read(x, y))
+              } catch {
+                case _: TileNotFoundError =>
+                  None
               }
 
-            // Render as a PNG
-            ndvi.renderPng(colorBreaks).bytes
+            tileOpt.map { tile =>
+              // Compute the NDVI
+              val ndvi =
+                tile.convert(DoubleConstantNoDataCellType).combineDouble(0, 1) { (r, ir) =>
+                  if(isData(r) && isData(ir)) {
+                    (ir - r) / (ir + r)
+                  } else {
+                    Double.NaN
+                  }
+                }
+
+              // Render as a PNG
+              ndvi.renderPng(colorMap).bytes
+            }
           }
         }
       }

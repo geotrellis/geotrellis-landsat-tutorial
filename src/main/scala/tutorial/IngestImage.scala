@@ -8,11 +8,10 @@ import geotrellis.raster.reproject._
 import geotrellis.proj4._
 
 import geotrellis.spark._
-import geotrellis.spark.io.hadoop._
+import geotrellis.spark.io._
 import geotrellis.spark.io.file._
+import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
-import geotrellis.spark.io.avro.codecs._
-import geotrellis.spark.io.json._
 import geotrellis.spark.ingest._
 import geotrellis.spark.reproject._
 import geotrellis.spark.tiling._
@@ -36,7 +35,7 @@ object IngestImage {
         .setMaster("local[*]")
         .setAppName("Spark Tiler")
         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-        .set("spark.kryo.registrator", "geotrellis.spark.io.hadoop.KryoRegistrator")
+        .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator")
 
     val sc = new SparkContext(conf)
 
@@ -58,16 +57,22 @@ object IngestImage {
     // using a method implicitly added to SparkContext by
     // an implicit class available via the
     // "import geotrellis.spark.io.hadoop._ " statement.
-    val inputRdd = sc.hadoopMultiBandGeoTiffRDD(inputPath)
+    val inputRdd: RDD[(ProjectedExtent, MultibandTile)] =
+      sc.hadoopMultibandGeoTiffRDD(inputPath)
 
-    // Use the "RasterMetaData.fromRdd" call to find the zoom
+    // Use the "TileLayerMetadata.fromRdd" call to find the zoom
     // level that the closest match to the resolution of our source image,
     // and derive information such as the full bounding box and data type.
     val (_, rasterMetaData) =
-      RasterMetaData.fromRdd(inputRdd, FloatingLayoutScheme(512))
+      TileLayerMetadata.fromRdd(inputRdd, FloatingLayoutScheme(512))
 
-    // Use the Tiler to cut our tiles into tiles that are index by the z/x/y map coordinates.
-    val tiled: RDD[(SpatialKey, MultiBandTile)] = inputRdd.tileToLayout(rasterMetaData, Bilinear)
+    // Use the Tiler to cut our tiles into tiles that are index to a floating layout scheme.
+    // We'll repartition it so that there are more partitions to work with, since spark
+    // likes to work with more, smaller partitions (to a point) over few and large partitions.
+    val tiled: RDD[(SpatialKey, MultibandTile)] =
+      inputRdd
+        .tileToLayout(rasterMetaData.cellType, rasterMetaData.layout, Bilinear)
+        .repartition(100)
 
     // We'll be tiling the images using a zoomed layout scheme
     // in the web mercator format (which fits the slippy map tile specification).
@@ -75,15 +80,16 @@ object IngestImage {
     val layoutScheme = ZoomedLayoutScheme(WebMercator, tileSize = 256)
 
     // We need to reproject the tiles to WebMercator
-    val (zoom, reprojected) = MultiBandRasterRDD(tiled, rasterMetaData).reproject(WebMercator, layoutScheme, Bilinear)
+    val (zoom, reprojected): (Int, RDD[(SpatialKey, MultibandTile)] with Metadata[TileLayerMetadata[SpatialKey]]) =
+      MultibandTileLayerRDD(tiled, rasterMetaData)
+        .reproject(WebMercator, layoutScheme, Bilinear)
 
     // Create the writer that we will use to store the tiles in the local catalog.
-    val writer = FileLayerWriter[SpatialKey, MultiBandTile, RasterMetaData](outputPath, ZCurveKeyIndexMethod)
+    val writer = FileLayerWriter(outputPath)
 
     // Pyramiding up the zoom levels, write our tiles out to the local file system.
-    val writeOp =
-      Pyramid.upLevels(reprojected, layoutScheme, zoom) { (rdd, z) =>
-        writer.write(LayerId("landsat", z), rdd)
-      }
+    Pyramid.upLevels(reprojected, layoutScheme, zoom) { (rdd, z) =>
+      writer.write(LayerId("landsat", z), rdd, ZCurveKeyIndexMethod)
+    }
   }
 }
