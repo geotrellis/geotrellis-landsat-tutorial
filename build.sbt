@@ -30,7 +30,7 @@ fork in run := true
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-spark" % "0.10.0-SNAPSHOT",
+  "com.azavea.geotrellis" %% "geotrellis-spark" % "0.10.0-RC2",
   "org.apache.spark" %% "spark-core" % "1.5.2",
   Dependencies.sprayRouting,
   Dependencies.sprayCan,
