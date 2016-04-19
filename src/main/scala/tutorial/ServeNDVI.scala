@@ -25,7 +25,8 @@ object ServeNDVI {
   val catalogPath = new java.io.File("data/catalog").getAbsolutePath
 
   // Create a reader that will read in the indexed tiles we produced in IngestImage.
-  val reader = FileTileReader[SpatialKey, MultibandTile](catalogPath)
+  val fileValueReader = FileValueReader(catalogPath)
+  def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
 
   def main(args: Array[String]): Unit = {
     implicit val system = akka.actor.ActorSystem("tutorial-system")
@@ -57,7 +58,7 @@ class NDVIServiceActor extends Actor with HttpService {
             // Read in the tile at the given z/x/y coordinates.
             val tileOpt: Option[MultibandTile] =
               try {
-                Some(ServeNDVI.reader.read(LayerId("landsat",zoom)).read(x, y))
+                Some(ServeNDVI.reader(LayerId("landsat",zoom)).read(x, y))
               } catch {
                 case _: TileNotFoundError =>
                   None

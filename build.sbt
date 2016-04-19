@@ -20,8 +20,6 @@ pomIncludeRepository := { _ => false }
 
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 
-resolvers += Resolver.bintrayRepo("azavea", "geotrellis")
-
 // We need to bump up the memory for some of the examples working with the landsat image.
 javaOptions += "-Xmx4G"
 
@@ -30,7 +28,7 @@ fork in run := true
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-spark" % "0.10.0-SNAPSHOT",
+  "com.azavea.geotrellis" %% "geotrellis-spark" % "0.10.0",
   "org.apache.spark" %% "spark-core" % "1.5.2",
   Dependencies.sprayRouting,
   Dependencies.sprayCan,

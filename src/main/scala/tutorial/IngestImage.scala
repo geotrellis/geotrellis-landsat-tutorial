@@ -12,7 +12,7 @@ import geotrellis.spark.io._
 import geotrellis.spark.io.file._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
-import geotrellis.spark.ingest._
+import geotrellis.spark.pyramid._
 import geotrellis.spark.reproject._
 import geotrellis.spark.tiling._
 import geotrellis.spark.render._
@@ -84,12 +84,20 @@ object IngestImage {
       MultibandTileLayerRDD(tiled, rasterMetaData)
         .reproject(WebMercator, layoutScheme, Bilinear)
 
+    // Create the attributes store that will tell us information about our catalog.
+    val attributeStore = FileAttributeStore(outputPath)
+
     // Create the writer that we will use to store the tiles in the local catalog.
-    val writer = FileLayerWriter(outputPath)
+    val writer = FileLayerWriter(attributeStore)
 
     // Pyramiding up the zoom levels, write our tiles out to the local file system.
     Pyramid.upLevels(reprojected, layoutScheme, zoom) { (rdd, z) =>
-      writer.write(LayerId("landsat", z), rdd, ZCurveKeyIndexMethod)
+      val layerId = LayerId("landsat", z)
+      // If the layer exists already, delete it out before writing
+      if(attributeStore.layerExists(layerId)) {
+        new FileLayerManager(attributeStore).delete(layerId)
+      }
+      writer.write(layerId, rdd, ZCurveKeyIndexMethod)
     }
   }
 }
