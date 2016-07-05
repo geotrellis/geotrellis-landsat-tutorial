@@ -91,7 +91,7 @@ object IngestImage {
     val writer = FileLayerWriter(attributeStore)
 
     // Pyramiding up the zoom levels, write our tiles out to the local file system.
-    Pyramid.upLevels(reprojected, layoutScheme, zoom) { (rdd, z) =>
+    Pyramid.upLevels(reprojected, layoutScheme, zoom, Bilinear) { (rdd, z) =>
       val layerId = LayerId("landsat", z)
       // If the layer exists already, delete it out before writing
       if(attributeStore.layerExists(layerId)) {

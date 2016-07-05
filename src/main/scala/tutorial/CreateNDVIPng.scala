@@ -14,10 +14,12 @@ object CreateNDVIPng {
       // Convert the tile to type double values,
       // because we will be performing an operation that
       // produces floating point values.
+      println("Reading in multiband image...")
       val tile = MultibandGeoTiff(maskedPath).convert(DoubleConstantNoDataCellType)
 
       // Use the combineDouble method to map over the red and infrared values
       // and perform the NDVI calculation.
+      println("Performing NDVI calculation...")
       tile.combineDouble(0, 1) { (r: Double, ir: Double) =>
         if(isData(r) && isData(ir)) {
           (ir - r) / (ir + r)
@@ -32,6 +34,7 @@ object CreateNDVIPng {
 
     // Render this NDVI using the color breaks as a PNG,
     // and write the PNG to disk.
+    println("Rendering PNG and saving to disk...")
     ndvi.renderPng(colorMap).write(ndviPath)
   }
 }

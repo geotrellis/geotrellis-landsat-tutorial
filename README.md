@@ -6,10 +6,12 @@ The calculation of the NDVI and the rendering of the PNG tile will be dynamic an
 
 ![Sample NDVI thumbail](https://raw.githubusercontent.com/geotrellis/geotrellis-landsat-tutorial/master/sample-ndvi-thumbnail.png)
 
-### Download a Landsat image
-Download this landsat image: https://s3.amazonaws.com/geotrellis-sample-datasets/landsat/LC80140322014139LGN00.tar.bz
+### Download a Landsat image bands
+Run the `data/landsat/download.sh` script to download the landsat image we will be working with.
 
-Un-tar this into `data/landsat`
+Here is a thumbnail of the image:
+
+![Landsat image thumbail](https://raw.githubusercontent.com/geotrellis/geotrellis-landsat-tutorial/master/LC81070352015218LGN00.jpg)
 
 ### Creating a 2 band geotiff from the red and NIR bands masked with the QA band
 
