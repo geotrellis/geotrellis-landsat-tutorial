@@ -25,9 +25,8 @@ import org.apache.spark.rdd._
 import java.io.File
 
 object IngestImage {
-  val inputPath = "file://" + new File("data/r-nir.tif").getAbsolutePath
-  val outputPath = "data/catalog"
-
+  var inputPath = "file://" //+ new File("data/r-nir.tif").//getAbsolutePath
+  var outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
     // Setup Spark to use Kryo serializer.
     val conf =
@@ -38,6 +37,16 @@ object IngestImage {
         .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator")
 
     val sc = new SparkContext(conf)
+    var differenceType = args(0).toLowerCase
+    if (differenceType.equals("NDVI")) {
+      //use the red bands for NDVI
+      inputPath += new File("data/r-nir.tif").getAbsolutePath
+      outputPath += "NDVI"
+    } else {
+      //use the green bands for NDWI
+      inputPath += new File("data/g-nir.tif").getAbsolutePath
+      outputPath += "NDWI"
+    }
 
     try {
       run(sc)
