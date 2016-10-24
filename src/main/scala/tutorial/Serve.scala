@@ -21,7 +21,7 @@ import spray.http.MediaTypes
 import scala.concurrent._
 import com.typesafe.config.ConfigFactory
 
-object ServeNDVI {
+object Serve {
   val catalogPath = new java.io.File("data/catalog").getAbsolutePath
 
   // Create a reader that will read in the indexed tiles we produced in IngestImage.
@@ -33,14 +33,14 @@ object ServeNDVI {
 
     // create and start our service actor
     val service =
-      system.actorOf(Props(classOf[NDVIServiceActor]), "tutorial")
+      system.actorOf(Props(classOf[ServiceActor]), "tutorial")
 
     // start a new HTTP server on port 8080 with our service actor as the handler
     IO(Http) ! Http.Bind(service, "localhost", 8080)
   }
 }
 
-class NDVIServiceActor extends Actor with HttpService {
+class ServiceActor extends Actor with HttpService {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def actorRefFactory = context
@@ -58,7 +58,7 @@ class NDVIServiceActor extends Actor with HttpService {
             // Read in the tile at the given z/x/y coordinates.
             val tileOpt: Option[MultibandTile] =
               try {
-                Some(ServeNDVI.reader(LayerId("landsat",zoom)).read(x, y))
+                Some(Serve.reader(LayerId("landsat",zoom)).read(x, y))
               } catch {
                 case _: TileNotFoundError =>
                   None

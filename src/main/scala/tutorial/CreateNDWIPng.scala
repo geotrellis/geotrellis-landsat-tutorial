@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
   */
 object CreateNDWIPng {
 
-  val maskedPath = "data/g-nir.tif"
+  val maskedPath = "data/r-g-nir.tif"
   val ndviPath = "data/ndwi.png"
 
   def main(args: Array[String]): Unit = {
