@@ -26,11 +26,7 @@ object CreateNDWIPng {
       // and perform the NDVI calculation.
       println("Performing NDWI calculation...")
       tile.combineDouble(0, 1) { (g: Double, ir: Double) =>
-        if(isData(g) && isData(ir)) {
-          (g - ir) / (ir + g)
-        } else {
-          Double.NaN
-        }
+        Calculations.ndwi(g, ir);
       }
     }
 

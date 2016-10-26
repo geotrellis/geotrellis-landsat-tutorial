@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" />
 <link rel="stylesheet" href="leaflet.css" />
 <link rel="stylesheet" href="css/button.css"/>
-<script src="leaflet.js"></script>
-<script src="js/mapSwitch"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="leaflet.js"></script>
 <style type="text/css">
 body, #map {
   height: 100%;
@@ -14,19 +14,13 @@ body, #map {
 <body>
 <div id="header" style="width: 100%;">
     <div>NDVI/NDWI</div>
-    <div class="toggle-button">
+    <div class="toggle-button" onclick="">
         <button></button>
     </div>
 </div>
 <div id="map"></div>
-<!--<script>
-  var map = L.map('map');
-
-  map.setView([35.294351, 140.110349], 7);
-
-  new L.tileLayer("http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png").addTo(map);
-
-  new L.tileLayer("http://localhost:8080/{z}/{x}/{y}", {layers: 'default', maxNativeZoom: 13, maxZoom: 18}).addTo(map);
-</script>-->
 </body>
+
+
 </html>
+<script src="js/mapSwitch.js"></script>
