@@ -7,7 +7,10 @@ import com.typesafe.config.ConfigFactory
 
 object MaskBandsRandGandNIR {
   val maskedPath = "data/r-g-nir.tif"
-
+  //constants to differentiate which bands to use
+  val R_BAND = 0
+  val G_BAND = 1
+  val NIR_BAND = 2
   // Path to our landsat band geotiffs.
   def bandPath(b: String) = s"data/landsat/LC81070352015218LGN00_${b}.TIF"
 

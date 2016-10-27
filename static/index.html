@@ -2,9 +2,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" />
 <link rel="stylesheet" href="leaflet.css" />
-<link rel="stylesheet" href="css/button.css"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-    <script src="leaflet.js"></script>
+<script src="leaflet.js"></script>
 <style type="text/css">
 body, #map {
   height: 100%;
@@ -12,15 +10,25 @@ body, #map {
 </style>
 </head>
 <body>
-<div id="header" style="width: 100%;">
-    <div>NDVI/NDWI</div>
-    <div class="toggle-button" onclick="">
-        <button></button>
-    </div>
+<div id="map">
 </div>
-<div id="map"></div>
+<script type="text/javascript">
+  //create the tile layers
+  var ndvi = new L.tileLayer("http://localhost:8080/ndvi/{z}/{x}/{y}", {maxNativeZoom: 13, maxZoom: 18});
+  var ndwi = new L.tileLayer("http://localhost:8080/ndwi/{z}/{x}/{y}", {maxNativeZoom: 13, maxZoom: 18});
+  var base = new L.tileLayer("http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png");
+  //link leaflet map with html
+  var map = L.map('map');
+  map.setView([35.294351, 140.110349], 7);
+  //create an overlay object
+  var overlayMaps = {
+    "NDVI": ndvi,
+    "NDWI": ndwi
+  };
+  //add the layers to the map
+  L.control.layers(overlayMaps, {}, {collapsed: false}).addTo(map);
+  base.addTo(map);
+  overlayMaps.NDVI.addTo(map);
+</script>
 </body>
-
-
 </html>
-<script src="js/mapSwitch.js"></script>

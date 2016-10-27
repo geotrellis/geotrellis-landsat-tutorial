@@ -25,8 +25,8 @@ import org.apache.spark.rdd._
 import java.io.File
 
 object IngestImage {
-  var inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
-  var outputPath = "data/catalog"
+  val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
+  val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
     // Setup Spark to use Kryo serializer.
     val conf =

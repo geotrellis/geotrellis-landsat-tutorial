@@ -3,12 +3,13 @@ package tutorial
 import geotrellis.raster._
 
 /**
-  * Created by FroehlingGallier on 10/26/16.
+  * Object that can calculate ndvi and ndwi
   */
 object Calculations {
-  /*
-  * Calculates the normalized difference vegetation index
-  * */
+  /** Calculates the normalized difference vegetation index
+    * @param r value of red band
+    * @param ir value of infra-red band
+    */
   def ndvi (r: Double, ir: Double) : Double = {
     if (isData(r) && isData(ir)) {
         (ir - r) / (ir + r)
@@ -17,9 +18,10 @@ object Calculations {
     }
   }
 
-  /*
-  * Calculates the normalized difference water index
-  * */
+  /** Calculates the normalized difference water index
+    * @param g value of red band
+    * @param ir value of infra-red band
+    */
   def ndwi (g: Double, ir: Double) : Double = {
     if (isData(g) && isData(ir)) {
       (g - ir) / (g + ir)

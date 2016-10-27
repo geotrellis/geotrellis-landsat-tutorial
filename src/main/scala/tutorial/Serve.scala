@@ -22,10 +22,9 @@ import scala.concurrent._
 import com.typesafe.config.ConfigFactory
 
 object Serve {
-
-  var catalogPath = new java.io.File("data/catalog").getAbsolutePath
+  val catalogPath = new java.io.File("data/catalog").getAbsolutePath
   // Create a reader that will read in the indexed tiles we produced in IngestImage.
-  var fileValueReader = FileValueReader(catalogPath)
+  val fileValueReader = FileValueReader(catalogPath)
   def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
 
   def main(args: Array[String]): Unit = {
@@ -46,18 +45,11 @@ class ServiceActor extends Actor with HttpService {
   def actorRefFactory = context
   def receive = runRoute(root)
 
-  val colorMap =
-    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.colormap")).get
-
   def root =
-    //pathPrefix(nd) {
-
-
       pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (nd, zoom, x, y) =>
         respondWithMediaType(MediaTypes.`image/png`) {
           complete {
             future {
-
               // Read in the tile at the given z/x/y coordinates.
               val tileOpt: Option[MultibandTile] =
               try {
@@ -66,31 +58,36 @@ class ServiceActor extends Actor with HttpService {
                 case _: TileNotFoundError =>
                   None
               }
-              if (nd == "ndvi") {
-                tileOpt.map { tile =>
-                  // Compute the NDVI
-                  val ndvi =
-                    tile.convert(DoubleConstantNoDataCellType).combineDouble(0, 1) { (r, ir) =>
-                      Calculations.ndvi(r, ir);
-                    }
-
-                  // Render as a PNG
-                  ndvi.renderPng(colorMap).bytes
-                }
-              } else {
-                tileOpt.map { tile =>
-                  // Compute the NDWI
-                  val ndwi =
-                    tile.convert(DoubleConstantNoDataCellType).combineDouble(0, 1) { (g, ir) =>
-                      Calculations.ndwi(g, ir)
-                    }
-                  // Render as a PNG
-                  ndwi.renderPng(colorMap).bytes
-                }
+              nd match {
+                case "ndvi" =>
+                  tileOpt.map { tile =>
+                    // Compute the NDVI
+                    val ndvi =
+                      tile.convert(DoubleConstantNoDataCellType).combineDouble(
+                        MaskBandsRandGandNIR.R_BAND, MaskBandsRandGandNIR.NIR_BAND) { (r, ir) =>
+                          Calculations.ndvi(r, ir);
+                      }
+                    // Render as a PNG
+                    val colorMap =
+                    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndviColormap")).get
+                    ndvi.renderPng(colorMap).bytes
+                  }
+                case "ndwi" =>
+                  tileOpt.map { tile =>
+                    // Compute the NDWI
+                    val ndwi =
+                      tile.convert(DoubleConstantNoDataCellType).combineDouble(
+                        MaskBandsRandGandNIR.G_BAND, MaskBandsRandGandNIR.NIR_BAND) { (g, ir) =>
+                          Calculations.ndwi(g, ir)
+                      }
+                    // Render as a PNG
+                    val colorMap =
+                    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndwiColormap")).get
+                    ndwi.renderPng(colorMap).bytes
+                  }
               }
             }
           }
         }
       }
-    //}
 }

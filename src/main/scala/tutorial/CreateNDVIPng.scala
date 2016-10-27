@@ -20,13 +20,13 @@ object CreateNDVIPng {
       // Use the combineDouble method to map over the red and infrared values
       // and perform the NDVI calculation.
       println("Performing NDVI calculation...")
-      tile.combineDouble(0, 2) { (r: Double, ir: Double) =>
+      tile.combineDouble(MaskBandsRandGandNIR.R_BAND, MaskBandsRandGandNIR.NIR_BAND) { (r: Double, ir: Double) =>
         Calculations.ndvi(r, ir);
       }
     }
 
     // Get color map from the application.conf settings file.
-    val colorMap = ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.colormap")).get
+    val colorMap = ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndviColormap")).get
 
     // Render this NDVI using the color breaks as a PNG,
     // and write the PNG to disk.

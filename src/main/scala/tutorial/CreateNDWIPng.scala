@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 object CreateNDWIPng {
 
   val maskedPath = "data/r-g-nir.tif"
-  val ndviPath = "data/ndwi.png"
+  val ndwiPath = "data/ndwi.png"
 
   def main(args: Array[String]): Unit = {
     val ndwi = {
@@ -25,17 +25,17 @@ object CreateNDWIPng {
       // Use the combineDouble method to map over the red and infrared values
       // and perform the NDVI calculation.
       println("Performing NDWI calculation...")
-      tile.combineDouble(1, 2) { (g: Double, ir: Double) =>
+      tile.combineDouble(MaskBandsRandGandNIR.G_BAND, MaskBandsRandGandNIR.NIR_BAND) { (g: Double, ir: Double) =>
         Calculations.ndwi(g, ir);
       }
     }
 
     // Get color map from the application.conf settings file.
-    val colorMap = ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.colormap")).get
+    val colorMap = ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndwiColormap")).get
 
     // Render this NDVI using the color breaks as a PNG,
     // and write the PNG to disk.
     println("Rendering PNG and saving to disk...")
-    ndwi.renderPng(colorMap).write(ndviPath)
+    ndwi.renderPng(colorMap).write(ndwiPath)
   }
 }
