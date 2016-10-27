@@ -21,23 +21,13 @@ import spray.http.MediaTypes
 import scala.concurrent._
 import com.typesafe.config.ConfigFactory
 
-private object ServeNDVI {
-  var catalogPath = new java.io.File("data/catalogNDVI").getAbsolutePath
-
-  // Create a reader that will read in the indexed tiles we produced in IngestImage.
-  var fileValueReader = FileValueReader(catalogPath)
-  def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
-}
-
-private object ServeNDWI {
-  var catalogPath = new java.io.File("data/catalogNDWI").getAbsolutePath
-
-  // Create a reader that will read in the indexed tiles we produced in IngestImage.
-  var fileValueReader = FileValueReader(catalogPath)
-  def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
-}
-
 object Serve {
+
+  var catalogPath = new java.io.File("data/catalog").getAbsolutePath
+  // Create a reader that will read in the indexed tiles we produced in IngestImage.
+  var fileValueReader = FileValueReader(catalogPath)
+  def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
+
   def main(args: Array[String]): Unit = {
     implicit val system = akka.actor.ActorSystem("tutorial-system")
 
@@ -71,11 +61,7 @@ class ServiceActor extends Actor with HttpService {
               // Read in the tile at the given z/x/y coordinates.
               val tileOpt: Option[MultibandTile] =
               try {
-                if (nd == "ndvi") {
-                  Some(ServeNDVI.reader(LayerId("landsat", zoom)).read(x, y))
-                } else {
-                  Some(ServeNDWI.reader(LayerId("landsat", zoom)).read(x, y))
-                }
+                Some(Serve.reader(LayerId("landsat", zoom)).read(x, y))
               } catch {
                 case _: TileNotFoundError =>
                   None

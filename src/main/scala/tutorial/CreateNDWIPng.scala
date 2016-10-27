@@ -25,7 +25,7 @@ object CreateNDWIPng {
       // Use the combineDouble method to map over the red and infrared values
       // and perform the NDVI calculation.
       println("Performing NDWI calculation...")
-      tile.combineDouble(0, 1) { (g: Double, ir: Double) =>
+      tile.combineDouble(1, 2) { (g: Double, ir: Double) =>
         Calculations.ndwi(g, ir);
       }
     }

@@ -20,7 +20,7 @@ object CreateNDVIPng {
       // Use the combineDouble method to map over the red and infrared values
       // and perform the NDVI calculation.
       println("Performing NDVI calculation...")
-      tile.combineDouble(0, 1) { (r: Double, ir: Double) =>
+      tile.combineDouble(0, 2) { (r: Double, ir: Double) =>
         Calculations.ndvi(r, ir);
       }
     }
