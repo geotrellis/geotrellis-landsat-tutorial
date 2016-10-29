@@ -20,13 +20,17 @@ import spray.routing.directives.CachingDirectives
 import spray.http.MediaTypes
 import scala.concurrent._
 import com.typesafe.config.ConfigFactory
+import MaskBandsRandGandNIR.{R_BAND, G_BAND, NIR_BAND}
 
 object Serve {
   val catalogPath = new java.io.File("data/catalog").getAbsolutePath
   // Create a reader that will read in the indexed tiles we produced in IngestImage.
   val fileValueReader = FileValueReader(catalogPath)
   def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
-
+  val ndviColorMap =
+    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndviColormap")).get
+  val ndwiColorMap =
+    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndwiColormap")).get
   def main(args: Array[String]): Unit = {
     implicit val system = akka.actor.ActorSystem("tutorial-system")
 
@@ -63,27 +67,21 @@ class ServiceActor extends Actor with HttpService {
                   tileOpt.map { tile =>
                     // Compute the NDVI
                     val ndvi =
-                      tile.convert(DoubleConstantNoDataCellType).combineDouble(
-                        MaskBandsRandGandNIR.R_BAND, MaskBandsRandGandNIR.NIR_BAND) { (r, ir) =>
+                      tile.convert(DoubleConstantNoDataCellType).combineDouble(R_BAND, NIR_BAND) { (r, ir) =>
                           Calculations.ndvi(r, ir);
                       }
                     // Render as a PNG
-                    val colorMap =
-                    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndviColormap")).get
-                    ndvi.renderPng(colorMap).bytes
+                    ndvi.renderPng(Serve.ndviColorMap).bytes
                   }
                 case "ndwi" =>
                   tileOpt.map { tile =>
                     // Compute the NDWI
                     val ndwi =
-                      tile.convert(DoubleConstantNoDataCellType).combineDouble(
-                        MaskBandsRandGandNIR.G_BAND, MaskBandsRandGandNIR.NIR_BAND) { (g, ir) =>
+                      tile.convert(DoubleConstantNoDataCellType).combineDouble(G_BAND, NIR_BAND) { (g, ir) =>
                           Calculations.ndwi(g, ir)
                       }
                     // Render as a PNG
-                    val colorMap =
-                    ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndwiColormap")).get
-                    ndwi.renderPng(colorMap).bytes
+                    ndwi.renderPng(Serve.ndwiColorMap).bytes
                   }
               }
             }
