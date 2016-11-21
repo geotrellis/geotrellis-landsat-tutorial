@@ -19,7 +19,7 @@ object Calculations {
   }
 
   /** Calculates the normalized difference water index
-    * @param g value of red band
+    * @param g value of green band
     * @param ir value of infra-red band
     */
   def ndwi (g: Double, ir: Double) : Double = {
