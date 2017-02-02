@@ -7,7 +7,7 @@ The calculations of the NDVI/NDWI and the rendering of the PNG tile will be dyna
 ![Sample NDVI thumbail](https://raw.githubusercontent.com/geotrellis/geotrellis-landsat-tutorial/master/sample-ndvi-thumbnail.png)
 
 ### Download a Landsat image bands
-Run the `data/landsat/download.sh` script to download the landsat image we will be working with.
+Run the `data/landsat/download-data.sh` script to download the landsat image we will be working with.
 
 Here is a thumbnail of the image:
 
