@@ -87,5 +87,11 @@ class ServiceActor extends Actor with HttpService {
             }
           }
         }
+      } ~
+      pathEndOrSingleSlash {
+        getFromFile("static/index.html")
+      } ~
+      pathPrefix("") {
+        getFromDirectory("static")
       }
 }
