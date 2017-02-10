@@ -30,8 +30,7 @@ libraryDependencies ++= Seq(
   "org.locationtech.geotrellis" %% "geotrellis-spark" % "1.0.0",
   "org.apache.spark" %% "spark-core" % "2.1.0",
   "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
-  Dependencies.sprayRouting,
-  Dependencies.sprayCan,
+  "com.typesafe.akka" %% "akka-http" % "10.0.3",
   "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 )
 
