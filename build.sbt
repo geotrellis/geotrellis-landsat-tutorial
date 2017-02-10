@@ -1,7 +1,6 @@
 name := "demo"
-version := "0.1.0"
-scalaVersion := "2.10.5"
-crossScalaVersions := Seq("2.11.5", "2.10.5")
+version := "0.2.0"
+scalaVersion := "2.11.8"
 organization := "com.azavea"
 licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 scalacOptions ++= Seq(
@@ -24,16 +23,16 @@ shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 javaOptions += "-Xmx4G"
 
 fork in run := true
-
 outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "com.azavea.geotrellis" %% "geotrellis-spark" % "0.10.1",
-  "org.apache.spark" %% "spark-core" % "1.5.2",
+  "org.locationtech.geotrellis" %% "geotrellis-spark" % "1.0.0",
+  "org.apache.spark" %% "spark-core" % "2.1.0",
+  "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
   Dependencies.sprayRouting,
   Dependencies.sprayCan,
-  "org.scalatest"       %%  "scalatest"      % "2.2.0" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 )
 
 Revolver.settings

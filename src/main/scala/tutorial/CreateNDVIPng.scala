@@ -15,7 +15,7 @@ object CreateNDVIPng {
       // because we will be performing an operation that
       // produces floating point values.
       println("Reading in multiband image...")
-      val tile = MultibandGeoTiff(maskedPath).convert(DoubleConstantNoDataCellType)
+      val tile = MultibandGeoTiff(maskedPath).tile.convert(DoubleConstantNoDataCellType)
 
       // Use the combineDouble method to map over the red and infrared values
       // and perform the NDVI calculation.

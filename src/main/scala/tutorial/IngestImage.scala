@@ -22,6 +22,7 @@ import geotrellis.vector._
 import org.apache.spark._
 import org.apache.spark.rdd._
 
+import scala.io.StdIn
 import java.io.File
 
 object IngestImage {
@@ -42,7 +43,7 @@ object IngestImage {
       // Pause to wait to close the spark context,
       // so that you can check out the UI at http://localhost:4040
       println("Hit enter to exit.")
-      readLine()
+      StdIn.readLine()
     } finally {
       sc.stop()
     }

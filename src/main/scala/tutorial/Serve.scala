@@ -53,13 +53,13 @@ class ServiceActor extends Actor with HttpService {
       pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (nd, zoom, x, y) =>
         respondWithMediaType(MediaTypes.`image/png`) {
           complete {
-            future {
+            Future {
               // Read in the tile at the given z/x/y coordinates.
               val tileOpt: Option[MultibandTile] =
               try {
                 Some(Serve.reader(LayerId("landsat", zoom)).read(x, y))
               } catch {
-                case _: TileNotFoundError =>
+                case _: ValueNotFoundError =>
                   None
               }
               nd match {
