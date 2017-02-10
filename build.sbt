@@ -25,6 +25,7 @@ javaOptions += "-Xmx4G"
 
 fork in run := true
 
+outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
