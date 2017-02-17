@@ -45,5 +45,3 @@ assemblyMergeStrategy in assembly := {
   case "META-INF/ECLIPSEF.SF" => MergeStrategy.discard
   case _ => MergeStrategy.first
 }
-
-net.virtualvoid.sbt.graph.Plugin.graphSettings
