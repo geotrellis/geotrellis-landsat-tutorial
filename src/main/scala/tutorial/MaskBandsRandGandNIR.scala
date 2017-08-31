@@ -54,8 +54,13 @@ object MaskBandsRandGandNIR {
     println("Masking clouds in the NIR band...")
     val nirMasked = maskClouds(nirTile)
 
+    // Landsat tiffs lack explicit NODATA tag but use 0 implicitly
+    val lcCellType = rMasked.cellType.withNoData(Some(0))
+
     // Create a multiband tile with our two masked red and infrared bands.
-    val mb = ArrayMultibandTile(rMasked, gMasked, nirMasked).convert(IntConstantNoDataCellType)
+    val mb = ArrayMultibandTile(rMasked, gMasked, nirMasked)
+      .interpretAs(lcCellType)
+      .convert(IntConstantNoDataCellType)
 
     // Create a multiband geotiff from our tile, using the same extent and CRS as the original geotiffs.
     println("Writing out the multiband R + G + NIR tile...")
