@@ -26,7 +26,7 @@ import scala.io.StdIn
 import java.io.File
 
 object IngestImage {
-  val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
+  val inputPath = "file://" + new File("data").getAbsolutePath + "/r-g-nir-*.tif"
   val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
     // Setup Spark to use Kryo serializer.

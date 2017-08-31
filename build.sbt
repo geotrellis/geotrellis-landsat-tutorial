@@ -20,9 +20,9 @@ pomIncludeRepository := { _ => false }
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 
 // We need to bump up the memory for some of the examples working with the landsat image.
-javaOptions += "-Xmx4G"
+javaOptions += "-Xmx8G"
 
-fork in run := true
+fork := true
 outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
