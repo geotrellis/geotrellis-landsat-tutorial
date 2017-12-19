@@ -20,15 +20,15 @@ pomIncludeRepository := { _ => false }
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 
 // We need to bump up the memory for some of the examples working with the landsat image.
-javaOptions += "-Xmx4G"
+javaOptions += "-Xmx8G"
 
 fork in run := true
 outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "org.locationtech.geotrellis" %% "geotrellis-spark" % "1.1.1",
-  "org.apache.spark" %% "spark-core" % "2.1.0",
+  "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.0.0-SNAPSHOT",
+  "org.apache.spark" %% "spark-core" % "2.2.0",
   "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
   "com.typesafe.akka" %% "akka-http" % "10.0.3",
   "org.scalatest" %% "scalatest" % "2.2.0" % "test"

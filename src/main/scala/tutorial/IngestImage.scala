@@ -9,7 +9,9 @@ import geotrellis.proj4._
 
 import geotrellis.spark._
 import geotrellis.spark.io._
+import geotrellis.spark.io.cog._
 import geotrellis.spark.io.file._
+import geotrellis.spark.io.file.cog._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
 import geotrellis.spark.pyramid._
@@ -79,7 +81,7 @@ object IngestImage {
     val layoutScheme = ZoomedLayoutScheme(WebMercator, tileSize = 256)
 
     // We need to reproject the tiles to WebMercator
-    val (zoom, reprojected): (Int, RDD[(SpatialKey, MultibandTile)] with Metadata[TileLayerMetadata[SpatialKey]]) =
+    val (zoom, reprojected): (Int, MultibandTileLayerRDD[SpatialKey]) =
       MultibandTileLayerRDD(tiled, rasterMetaData)
         .reproject(WebMercator, layoutScheme, Bilinear)
 
@@ -87,16 +89,22 @@ object IngestImage {
     val attributeStore = FileAttributeStore(outputPath)
 
     // Create the writer that we will use to store the tiles in the local catalog.
-    val writer = FileLayerWriter(attributeStore)
+    val writer = new FileCOGLayerWriter2(attributeStore)
 
-    // Pyramiding up the zoom levels, write our tiles out to the local file system.
-    Pyramid.upLevels(reprojected, layoutScheme, zoom, Bilinear) { (rdd, z) =>
-      val layerId = LayerId("landsat", z)
-      // If the layer exists already, delete it out before writing
-      if(attributeStore.layerExists(layerId)) {
-        new FileLayerManager(attributeStore).delete(layerId)
-      }
-      writer.write(layerId, rdd, ZCurveKeyIndexMethod)
-    }
+    writer.write("landsat_cog", reprojected, zoom, ZCurveKeyIndexMethod)
+
+    // for(cogLayer <- COGLayer.applyWithMetadataCalc(reprojected)(zoom, layoutScheme)) {
+    //   writer.writeVRT(cogLayer)(LayerId("landsat", zoom), ZCurveKeyIndexMethod)
+    // }
+
+    // // Pyramiding up the zoom levels, write our tiles out to the local file system.
+    // Pyramid.upLevels(reprojected, layoutScheme, zoom, Bilinear) { (rdd, z) =>
+    //   val layerId = LayerId("landsat", z)
+    //   // If the layer exists already, delete it out before writing
+    //   if(attributeStore.layerExists(layerId)) {
+    //     new FileLayerManager(attributeStore).delete(layerId)
+    //   }
+    //   writer.write(layerId, rdd, ZCurveKeyIndexMethod)
+    // }
   }
 }
