@@ -53,7 +53,7 @@ trait Service {
           // Read in the tile at the given z/x/y coordinates.
           val tileOpt: Option[MultibandTile] =
             try {
-              Some(Serve.reader(LayerId("landsat", zoom)).read(x, y))
+              Some(Serve.reader(LayerId("landsat_cog", zoom)).read(x, y))
             } catch {
               case _: ValueNotFoundError =>
                 None
