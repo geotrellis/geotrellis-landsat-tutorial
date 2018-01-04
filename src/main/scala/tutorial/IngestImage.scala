@@ -38,6 +38,7 @@ object IngestImage {
         .setAppName("Spark Tiler")
         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
         .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator")
+        // .set("spark.local.dir", "/data/spark")
 
     val sc = new SparkContext(conf)
     try {
@@ -89,7 +90,7 @@ object IngestImage {
     val attributeStore = FileAttributeStore(outputPath)
 
     // Create the writer that we will use to store the tiles in the local catalog.
-    val writer = new FileCOGLayerWriter2(attributeStore)
+    val writer = new FileCOGLayerWriter(attributeStore)
 
     writer.write("landsat_cog", reprojected, zoom, ZCurveKeyIndexMethod)
 

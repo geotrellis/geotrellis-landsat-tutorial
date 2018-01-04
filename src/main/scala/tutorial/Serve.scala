@@ -16,13 +16,13 @@ import akka.stream.{ActorMaterializer, Materializer}
 
 import scala.concurrent._
 import com.typesafe.config.ConfigFactory
-import MaskBandsRandGandNIR.{R_BAND, G_BAND, NIR_BAND}
+import MaskBandsRandGandNIR.{G_BAND, NIR_BAND, R_BAND}
 
 object Serve extends App with Service {
   val catalogPath = new java.io.File("data/catalog").getAbsolutePath
   // Create a reader that will read in the indexed tiles we produced in IngestImage.
   val attributeStore = FileAttributeStore(catalogPath)
-  val fileValueReader = new FileCOGValueReader2(attributeStore, catalogPath)
+  val fileValueReader = new FileCOGValueReader(attributeStore, catalogPath)
   def reader(layerId: LayerId) = fileValueReader.reader[SpatialKey, MultibandTile](layerId)
   val ndviColorMap =
     ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndviColormap")).get
