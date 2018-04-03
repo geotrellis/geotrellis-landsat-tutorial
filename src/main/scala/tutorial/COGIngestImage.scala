@@ -2,6 +2,7 @@ package tutorial
 
 import geotrellis.raster._
 import geotrellis.raster.io.geotiff._
+import geotrellis.raster.io.geotiff.compression.{Compression, NoCompression}
 import geotrellis.raster.render._
 import geotrellis.raster.resample._
 import geotrellis.raster.reproject._
@@ -9,7 +10,9 @@ import geotrellis.proj4._
 
 import geotrellis.spark._
 import geotrellis.spark.io._
+import geotrellis.spark.io.cog._
 import geotrellis.spark.io.file._
+import geotrellis.spark.io.file.cog._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
 import geotrellis.spark.pyramid._
@@ -25,7 +28,7 @@ import org.apache.spark.rdd._
 import scala.io.StdIn
 import java.io.File
 
-object IngestImage {
+object COGIngestImage {
   val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
   val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
@@ -87,16 +90,23 @@ object IngestImage {
     val attributeStore = FileAttributeStore(outputPath)
 
     // Create the writer that we will use to store the tiles in the local catalog.
-    val writer = FileLayerWriter(attributeStore)
+    val writer = FileCOGLayerWriter(attributeStore)
 
-    // Pyramiding up the zoom levels, write our tiles out to the local file system.
-    Pyramid.upLevels(reprojected, layoutScheme, zoom, Bilinear) { (rdd, z) =>
-      val layerId = LayerId("landsat-nocog", z)
-      // If the layer exists already, delete it out before writing
-      if(attributeStore.layerExists(layerId)) {
-        new FileLayerManager(attributeStore).delete(layerId)
-      }
-      writer.write(layerId, rdd, ZCurveKeyIndexMethod)
-    }
+    val layerName = "landsat-nocomp-2"
+
+    val cogLayer =
+      COGLayer.fromLayerRDD(
+        reprojected,
+        zoom,
+        compression = NoCompression,
+        maxTileSize = 1024
+      )
+
+    val keyIndexes =
+      cogLayer.metadata.zoomRangeInfos.
+        map { case (zr, bounds) => zr -> ZCurveKeyIndexMethod.createIndex(bounds) }.
+        toMap
+
+    writer.writeCOGLayer(layerName, cogLayer, keyIndexes)
   }
 }
