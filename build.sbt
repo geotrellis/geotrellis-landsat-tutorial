@@ -27,7 +27,7 @@ outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.0.0-SNAPSHOT",
+  "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.0.0-M2",
   "org.apache.spark" %% "spark-core" % "2.1.0",
   "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
   "com.typesafe.akka" %% "akka-http" % "10.0.3",

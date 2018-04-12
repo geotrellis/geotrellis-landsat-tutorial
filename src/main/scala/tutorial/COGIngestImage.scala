@@ -92,14 +92,14 @@ object COGIngestImage {
     // Create the writer that we will use to store the tiles in the local catalog.
     val writer = FileCOGLayerWriter(attributeStore)
 
-    val layerName = "landsat-nocomp-2"
+    val layerName = "landsat-nocomp"
 
     val cogLayer =
       COGLayer.fromLayerRDD(
         reprojected,
         zoom,
         compression = NoCompression,
-        maxTileSize = 1024
+        maxTileSize = 4096
       )
 
     val keyIndexes =
