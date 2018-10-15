@@ -1,11 +1,8 @@
 package tutorial
 
 import geotrellis.raster._
-import geotrellis.raster.io.geotiff._
-import geotrellis.raster.io.geotiff.compression.{Compression, NoCompression}
-import geotrellis.raster.render._
+import geotrellis.raster.io.geotiff.compression._
 import geotrellis.raster.resample._
-import geotrellis.raster.reproject._
 import geotrellis.proj4._
 
 import geotrellis.spark._
@@ -15,11 +12,7 @@ import geotrellis.spark.io.file._
 import geotrellis.spark.io.file.cog._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
-import geotrellis.spark.pyramid._
-import geotrellis.spark.reproject._
 import geotrellis.spark.tiling._
-import geotrellis.spark.render._
-
 import geotrellis.vector._
 
 import org.apache.spark._
@@ -65,8 +58,7 @@ object COGIngestImage {
     // Use the "TileLayerMetadata.fromRdd" call to find the zoom
     // level that the closest match to the resolution of our source image,
     // and derive information such as the full bounding box and data type.
-    val (_, rasterMetaData) =
-      TileLayerMetadata.fromRdd(inputRdd, FloatingLayoutScheme(512))
+    val (_, rasterMetaData) = inputRdd.collectMetadata[SpatialKey](FloatingLayoutScheme(512))
 
     // Use the Tiler to cut our tiles into tiles that are index to a floating layout scheme.
     // We'll repartition it so that there are more partitions to work with, since spark
@@ -98,8 +90,10 @@ object COGIngestImage {
       COGLayer.fromLayerRDD(
         reprojected,
         zoom,
-        compression = NoCompression,
-        maxTileSize = 4096
+        options = COGLayerWriter.Options.DEFAULT.copy(
+          compression = NoCompression,
+          maxTileSize = 4096
+        )
       )
 
     val keyIndexes =

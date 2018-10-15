@@ -1,6 +1,6 @@
 name := "demo"
-version := "0.2.0"
-scalaVersion := "2.11.8"
+version := "0.3.0-SNAPSHOT"
+scalaVersion := "2.11.12"
 organization := "com.azavea"
 licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 scalacOptions ++= Seq(
@@ -27,8 +27,8 @@ outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.0.0-M2",
-  "org.apache.spark" %% "spark-core" % "2.1.0",
+  "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.0.0",
+  "org.apache.spark" %% "spark-core" % "2.3.2",
   "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
   "com.typesafe.akka" %% "akka-http" % "10.0.3",
   "org.scalatest" %% "scalatest" % "2.2.0" % "test"
@@ -39,7 +39,6 @@ resolvers ++= Seq(
   "locationtech-snapshots" at "https://repo.locationtech.org/content/groups/snapshots"
 )
 
-Revolver.settings
 
 assemblyMergeStrategy in assembly := {
   case "reference.conf" => MergeStrategy.concat
