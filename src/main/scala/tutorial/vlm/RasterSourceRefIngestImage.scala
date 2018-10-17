@@ -90,7 +90,7 @@ object RasterSourceRefIngestImage {
 
     /** Function that actually forces the reading of pixels */
     def readRefs(refs: Iterable[RasterRef]): MultibandTile =
-      ArrayMultibandTile(refs.flatMap(_.raster.toList.flatMap(_.tile.bands.toList)).toArray)
+      ArrayMultibandTile(refs.flatMap(_.raster.toList.flatMap(_.tile.bands.map(_.toArrayTile: Tile).toList)).toArray)
 
     val tileRdd: RDD[(SpatialKey, MultibandTile)] = {
       rasterRefRdd
