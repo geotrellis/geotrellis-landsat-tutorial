@@ -61,6 +61,7 @@ object RasterSummary {
       .map { case grid =>
         val ProjectedExtent(extent, crs) = grid.getComponent[ProjectedExtent]
         val cellSize = CellSize(extent, grid.cols, grid.rows)
+        println(s"::extent: $extent")
         (crs, RasterSummary(crs, grid.cellType, cellSize, extent, grid.size, 1))
       }
       .reduceByKey { _ combine _ }

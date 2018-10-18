@@ -1,21 +1,22 @@
 package tutorial.vlm
 
+import java.io.File
+
 import geotrellis.contrib.vlm._
+import geotrellis.proj4.WebMercator
 import geotrellis.raster._
+import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
 import geotrellis.spark.io._
 import geotrellis.spark.io.file._
 import geotrellis.spark.io.index._
-import geotrellis.spark.tiling.{FloatingLayoutScheme, LayoutDefinition}
+import geotrellis.spark.tiling.{FloatingLayoutScheme, LayoutDefinition, LayoutLevel, ZoomedLayoutScheme}
 import org.apache.spark._
 import org.apache.spark.rdd._
 
 import scala.io.StdIn
-import java.io.File
 
-import geotrellis.spark.io.avro.AvroRecordCodec
-
-object RasterSourceRefIngestImage {
+object RasterSourceRefPyramidIngestImage {
   val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
   val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
@@ -42,14 +43,16 @@ object RasterSourceRefIngestImage {
   def fullPath(path: String) = new java.io.File(path).getAbsolutePath
 
   def run(implicit sc: SparkContext) = {
-    // for a given list of files
     val files = inputPath :: Nil
+    val targetCRS = WebMercator
+
+    val method = Bilinear
+    val layoutScheme = ZoomedLayoutScheme(targetCRS, tileSize = 256)
 
     // we can read in the infomration about input raster sources
     val sourceRDD: RDD[RasterSource] =
       sc.parallelize(files, files.length)
-        .map(uri => new GeoTiffRasterSource(uri): RasterSource)
-        .cache()
+        .map(uri => new GeoTiffRasterSource(uri).reproject(targetCRS, method): RasterSource)
 
     // after reading, we need to collect metadata for all input RasterSources
     val summary: RasterSummary = {
@@ -59,14 +62,7 @@ object RasterSourceRefIngestImage {
       all.head // assuming we have a single one
     }
 
-    // LayoutDefinition specifies a pixel grid as well as tile grid over a single CRS
-    val layout: LayoutDefinition = {
-      // LayoutScheme is something that will produce a pixel and tile grid for rasters footprints
-      // Floating layout scheme will preserve the raster cell size and start tiling at the top-most, left-most pixel available
-      val scheme = new FloatingLayoutScheme(512, 512)
-      scheme.levelFor(summary.extent, summary.cellSize).layout
-    }
-
+    val LayoutLevel(globalZoom, layout) = layoutScheme.levelFor(summary.extent, summary.cellSize)
 
     val numPartitions: Int = {
       import squants.information._
@@ -76,10 +72,11 @@ object RasterSourceRefIngestImage {
       numPartitions
     }
 
+    val layoutRDD: RDD[LayoutTileSource] = sourceRDD.map(_.tileToLayout(layout, method))
+
     val rasterRefRdd: RDD[(SpatialKey, RasterRef)] = {
-      sourceRDD
-        .flatMap { rs =>
-          val tileSource = new LayoutTileSource(rs, layout)
+      layoutRDD
+        .flatMap { tileSource =>
           // iterate over all tile keys we can read from this RasterSource
           tileSource.keys.toIterator.map { key: SpatialKey =>
             // generate reference to a tile we can read eventually
@@ -89,25 +86,36 @@ object RasterSourceRefIngestImage {
         }
     }
 
-    // implicit def supe: AvroRecordCodec[RasterRef] = { def encode(t: RasterRef) = AvroRecordCodec[MultibandTile].encode(t.tile) }
-    //resample raster ref??
-
-    // implicit def supe: AvroRecordCodec[PaddedTile] = { def encode(t: PaddedTile) = geotrellis.spark.io.avro.codecs.Implicits.tileUnionCodec.encode(t.toArrayTile) }
+    val newSummary: RasterSummary = {
+      val all = RasterSummary.collect(layoutRDD.map(_.source))
+      println(s"Raster Summary: ${all.toList}")
+      require(all.size == 1, "multiple CRSs detected") // what to do in this case?
+      all.head // assuming we have a single one
+    }
 
     /** Function that actually forces the reading of pixels */
     def readRefs(refs: Iterable[RasterRef]): MultibandTile =
       ArrayMultibandTile(refs.flatMap(_.raster.toList.flatMap(_.tile.bands.map(_.toArrayTile: Tile).toList)).toArray)
 
-    // implicit avro codec for a raster ref and for each tile we can map over the bands and convert them into whatever type we need
     val tileRdd: RDD[(SpatialKey, MultibandTile)] = {
       rasterRefRdd
         .groupByKey(SpatialPartitioner(numPartitions))
         .mapValues(readRefs)
     }
 
+    println(s"realKeys: ${tileRdd.keys.collect().toList}")
+
     // Finish assemling geotrellis raster layer type
     val layerRdd: MultibandTileLayerRDD[SpatialKey] = {
-      val (tlm, zoom) = summary.toTileLayerMetadata(LocalLayout(512, 512))
+      val (ld, _) = (layout, globalZoom)
+      // summary.copy(extent = TargetGrid(layout).apply(layout))
+      // weird API issues
+      val dataBounds: Bounds[SpatialKey] = KeyBounds(ld.mapTransform.extentToBounds(layout.extent.intersection(newSummary.extent).get))
+      val (tlm, zoom) = TileLayerMetadata[SpatialKey](summary.cellType, ld, newSummary.extent, summary.crs, dataBounds) -> globalZoom
+
+      // val (tlm, zoom) = summary.toTileLayerMetadata(GlobalLayout(256, globalZoom, 0.1))
+      println(s"collectedKeyBounds: ${tlm.bounds}")
+
       ContextRDD(tileRdd, tlm)
     }
 
@@ -117,7 +125,7 @@ object RasterSourceRefIngestImage {
     // Create the writer that we will use to store the tiles in the local catalog.
     val writer = FileLayerWriter(attributeStore)
 
-    val layerId = LayerId("landsat-nocog-ref", 0)
+    val layerId = LayerId("landsat-nocog-ref-global", globalZoom)
     writer.write(layerId, layerRdd, ZCurveKeyIndexMethod)
   }
 }

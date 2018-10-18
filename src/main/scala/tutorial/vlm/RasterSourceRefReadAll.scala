@@ -48,8 +48,8 @@ object RasterSourceRefReadAll {
     // Create the writer that we will use to store the tiles in the local catalog.
     val reader = FileLayerReader(attributeStore)
 
-    val layerId = LayerId("landsat-nocog-ref", 0)
+    val layerId = LayerId("landsat-nocog-ref-global", 13)
     val raster = reader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId).stitch()
-    raster.tile.subsetBands(0, 1, 2).renderPng().write("/Users/daunnc/Downloads/landsat-nocog-ref.png")
+    raster.tile.subsetBands(0, 1, 2).renderPng().write("/Users/daunnc/Downloads/landsat-nocog-ref-global.png")
   }
 }
