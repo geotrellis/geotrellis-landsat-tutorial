@@ -10,13 +10,14 @@ import geotrellis.spark._
 import geotrellis.spark.io._
 import geotrellis.spark.io.file._
 import geotrellis.spark.io.index._
-import geotrellis.spark.tiling.{FloatingLayoutScheme, LayoutDefinition, LayoutLevel, ZoomedLayoutScheme}
+import geotrellis.spark.tiling.{LayoutLevel, ZoomedLayoutScheme}
 import org.apache.spark._
 import org.apache.spark.rdd._
 
 import scala.io.StdIn
 
 object RasterSourceRefPyramidIngestImage {
+  import tutorial.vlm.avro.Implicits._
   val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
   val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
@@ -103,7 +104,7 @@ object RasterSourceRefPyramidIngestImage {
         .mapValues(readRefs)
     }
 
-    println(s"realKeys: ${tileRdd.keys.collect().toList}")
+    // println(s"realKeys: ${tileRdd.keys.collect().toList}")
 
     // Finish assemling geotrellis raster layer type
     val layerRdd: MultibandTileLayerRDD[SpatialKey] = {
@@ -114,7 +115,7 @@ object RasterSourceRefPyramidIngestImage {
       val (tlm, zoom) = TileLayerMetadata[SpatialKey](summary.cellType, ld, newSummary.extent, summary.crs, dataBounds) -> globalZoom
 
       // val (tlm, zoom) = summary.toTileLayerMetadata(GlobalLayout(256, globalZoom, 0.1))
-      println(s"collectedKeyBounds: ${tlm.bounds}")
+      // println(s"collectedKeyBounds: ${tlm.bounds}")
 
       ContextRDD(tileRdd, tlm)
     }

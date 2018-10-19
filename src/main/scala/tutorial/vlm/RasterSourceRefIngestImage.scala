@@ -13,9 +13,9 @@ import org.apache.spark.rdd._
 import scala.io.StdIn
 import java.io.File
 
-import geotrellis.spark.io.avro.AvroRecordCodec
-
 object RasterSourceRefIngestImage {
+  import tutorial.vlm.avro.Implicits._
+
   val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
   val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
@@ -96,7 +96,7 @@ object RasterSourceRefIngestImage {
 
     /** Function that actually forces the reading of pixels */
     def readRefs(refs: Iterable[RasterRef]): MultibandTile =
-      ArrayMultibandTile(refs.flatMap(_.raster.toList.flatMap(_.tile.bands.map(_.toArrayTile: Tile).toList)).toArray)
+      ArrayMultibandTile(refs.flatMap(_.raster.toList.flatMap(_.tile.bands.toList)).toArray)
 
     // implicit avro codec for a raster ref and for each tile we can map over the bands and convert them into whatever type we need
     val tileRdd: RDD[(SpatialKey, MultibandTile)] = {

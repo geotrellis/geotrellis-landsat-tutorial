@@ -8,7 +8,6 @@ import geotrellis.spark.io._
 import geotrellis.spark.io.file._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
-import geotrellis.spark.pyramid._
 import geotrellis.spark.tiling._
 import geotrellis.vector._
 
@@ -81,14 +80,15 @@ object IngestImage {
     // Create the writer that we will use to store the tiles in the local catalog.
     val writer = FileLayerWriter(attributeStore)
 
+    writer.write(LayerId("landsat-nocog-notpyramided", zoom), reprojected, ZCurveKeyIndexMethod)
     // Pyramiding up the zoom levels, write our tiles out to the local file system.
-    Pyramid.upLevels(reprojected, layoutScheme, zoom, Bilinear) { (rdd, z) =>
+    /*Pyramid.upLevels(reprojected, layoutScheme, zoom, Bilinear) { (rdd, z) =>
       val layerId = LayerId("landsat-nocog", z)
       // If the layer exists already, delete it out before writing
       if(attributeStore.layerExists(layerId)) {
         new FileLayerManager(attributeStore).delete(layerId)
       }
       writer.write(layerId, rdd, ZCurveKeyIndexMethod)
-    }
+    }*/
   }
 }
