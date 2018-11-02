@@ -1,20 +1,19 @@
 package tutorial.vlm
 
-import geotrellis.contrib.vlm._
+import geotrellis.contrib.vlm.avro._
 import geotrellis.raster._
 import geotrellis.spark._
-import geotrellis.spark.io._
+import geotrellis.spark.io.json.Implicits._
 import geotrellis.spark.io.file._
-import geotrellis.spark.io.index._
-import geotrellis.spark.tiling.{LayoutDefinition, FloatingLayoutScheme}
-
 import org.apache.spark._
-import org.apache.spark.rdd._
 
 import scala.io.StdIn
 import java.io.File
 
-object RasterSourceRefReadAll {
+import geotrellis.spark.io.Intersects
+import geotrellis.vector.Extent
+
+object RasterSourceReadAll {
   val inputPath = "file://" + new File("data/r-g-nir.tif").getAbsolutePath
   val outputPath = "data/catalog"
   def main(args: Array[String]): Unit = {
@@ -42,14 +41,21 @@ object RasterSourceRefReadAll {
   def fullPath(path: String) = new java.io.File(path).getAbsolutePath
 
   def run(implicit sc: SparkContext) = {
-    // Create the attributes store that will tell us information about our catalog.
-    val attributeStore = FileAttributeStore(outputPath)
-
-    // Create the writer that we will use to store the tiles in the local catalog.
-    val reader = FileLayerReader(attributeStore)
-
     val layerId = LayerId("landsat-nocog-ref-global", 13)
-    val raster = reader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId).stitch()
-    raster.tile.subsetBands(0, 1, 2).renderPng().write("/Users/daunnc/Downloads/landsat-nocog-ref-global.png")
+    val attributeStore = FileAttributeStore(outputPath)
+    val reader = FileLayerReader(attributeStore)
+    val extent = {
+      val extent = attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](layerId).extent
+      extent.buffer(- math.min(extent.width / 2, extent.height / 2))
+    }
+
+    val raster =
+      reader
+        .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId)
+        .where(Intersects(extent))
+        .result
+        .stitch()
+
+    raster.tile.band(0).renderPng().write("/Users/daunnc/Downloads/landsat-nocog-ref-global.png")
   }
 }

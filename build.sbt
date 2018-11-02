@@ -19,16 +19,13 @@ pomIncludeRepository := { _ => false }
 
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 
-// We need to bump up the memory for some of the examples working with the landsat image.
-javaOptions += "-Xmx4G"
-
 fork in run := true
 outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
   "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.0.0-SNAPSHOT",
-  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm" % "0.3.0-SNAPSHOT",
+  "com.azavea.geotrellis" %% "geotrellis-contrib-vlm" % "0.4.0",
   "org.typelevel"  %% "squants"  % "1.3.0",
   "org.apache.spark" %% "spark-core" % "2.3.2",
   "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
@@ -36,11 +33,10 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 )
 
-resolvers ++= Seq(
+/*resolvers ++= Seq(
   "locationtech-releases" at "https://repo.locationtech.org/content/groups/releases",
   "locationtech-snapshots" at "https://repo.locationtech.org/content/groups/snapshots"
-)
-
+)*/
 
 assemblyMergeStrategy in assembly := {
   case "reference.conf" => MergeStrategy.concat

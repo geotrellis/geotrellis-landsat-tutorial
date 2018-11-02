@@ -70,6 +70,13 @@ Select the `tutorial.IngestImage` to run.
 
 Tiles will be generated in the `data/catalog` directory.
 
+### Ingest the multiband geotiff into a GeoTrellis catalog via VLM.
+
+The code is in the `src/main/scala/tutorial/vlm` folder. In fact it replicates the ingest process but using a new API.
+To read `RasterSources` into a test png you can using `RasterSourceReadAll`. To serve them you can use `RasterSourceServe`. 
+`RasterSourceLocalIngest` ingests data according to a `FloatingLayoutScheme`.
+`RasterSourceGlobaklIngest` ingests data according to a `ZoomedLayoutScheme`.
+
 ### Serve out dynamically created NDVI/NDWI images using Spray
 
 This step will start a server that will serve out NDVI/NDWI images onto a web map, allowing users to toggle between layers.
