@@ -1,5 +1,7 @@
 # GeoTrellis landsat tutorial project
 
+**Checkout branch with an experimental VLM support**: [feature/raster-source](https://github.com/geotrellis/geotrellis-landsat-tutorial/tree/feature/raster-source)
+
 This tutorial goes over how to process a single landsat image on a single machine, using GeoTrellis and spark.
 We will create a server that will serve out tiles onto a web map that represent NDVI and NDWI calculations on our image.
 The calculations of the NDVI/NDWI and the rendering of the PNG tile will be dynamic and happen per tile request.
