@@ -71,16 +71,16 @@ object RasterSourceGlobalIngestImage {
     val attributeStore = FileAttributeStore(outputPath)
     val writer = FileLayerWriter(attributeStore)
 
-    // val layerId = LayerId("landsat-nocog-ref-global", zoom)
-    // writer.write(layerId, contextRDD, ZCurveKeyIndexMethod)
+    val layerId = LayerId("landsat-nocog-ref-global", zoom)
+    writer.write(layerId, contextRDD, ZCurveKeyIndexMethod)
 
-    Pyramid.upLevels(contextRDD, layoutScheme, zoom, Bilinear) { (rdd, z) =>
+    /*Pyramid.upLevels(contextRDD, layoutScheme, zoom, Bilinear) { (rdd, z) =>
       val layerId = LayerId("landsat-nocog-ref-global", z)
       // If the layer exists already, delete it out before writing
       if(attributeStore.layerExists(layerId)) {
         new FileLayerManager(attributeStore).delete(layerId)
       }
       writer.write(layerId, rdd, ZCurveKeyIndexMethod)
-    }
+    }*/
   }
 }
