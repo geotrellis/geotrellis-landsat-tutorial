@@ -74,6 +74,8 @@ Tiles will be generated in the `data/catalog` directory.
 
 ### Ingest the multiband geotiff into a GeoTrellis catalog via VLM.
 
+**WARN this branch depends on https://github.com/geotrellis/geotrellis-contrib/pull/42**
+
 The code is in the `src/main/scala/tutorial/vlm` folder. In fact it replicates the ingest process but using a new API.
 To read `RasterSources` into a test png you can using `RasterSourceReadAll`. To serve them you can use `RasterSourceServe`. 
 `RasterSourceLocalIngest` ingests data according to a `FloatingLayoutScheme`.
