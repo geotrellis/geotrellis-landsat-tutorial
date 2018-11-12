@@ -27,14 +27,13 @@ outputStrategy in run := Some(StdoutOutput)
 connectInput in run := true
 
 libraryDependencies ++= Seq(
-  "org.locationtech.geotrellis" %% "geotrellis-spark" % "1.1.1",
-  "org.apache.spark" %% "spark-core" % "2.1.0",
+  "org.locationtech.geotrellis" %% "geotrellis-spark" % "2.1.0",
+  "org.apache.spark" %% "spark-core" % "2.3.1",
   "com.typesafe.akka" %% "akka-actor"  % "2.4.3",
   "com.typesafe.akka" %% "akka-http" % "10.0.3",
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.7",
   "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 )
-
-Revolver.settings
 
 assemblyMergeStrategy in assembly := {
   case "reference.conf" => MergeStrategy.concat
