@@ -45,16 +45,15 @@ body, #map {
   map.on(L.Draw.Event.CREATED, function (e) {
     var type = e.layerType,
       layer = e.layer;
-    layer.bindPopup("calculating...");
+    layer.bindPopup("waiting...");
 
     var feature = layer.toGeoJSON()
     var postBody = JSON.stringify(feature.geometry)
     var zoom = map.getZoom()
-    $.post("/summary/" + zoom, postBody, function (data, status) {
-      var msg = "Zoom " + zoom + " raw values:<br/>" +
-        data.map(function(tup) {
-          return "min: "+ tup[0] +" max: " + tup[1]
-        }).join("<br/>");
+    $.post("/ndvi/"+zoom+"/summary", postBody, function (data, status) {
+      var msg = "Zoom: " + zoom + "<br/>" +
+        "NDVI min: "+ data[0] + "<br/>" +
+        "NDVI max: " + data[1];
       layer.bindPopup(msg)
     });
     map.addLayer(layer);

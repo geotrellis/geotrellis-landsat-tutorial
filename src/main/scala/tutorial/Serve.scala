@@ -37,6 +37,25 @@ object Serve extends App with Service {
   val ndwiColorMap =
     ColorMap.fromStringDouble(ConfigFactory.load().getString("tutorial.ndwiColormap")).get
 
+  def colorMapForRender(render: String): ColorMap = render match {
+    case "ndvi" => ndviColorMap
+    case "ndwi" => ndwiColorMap
+    case _ => ???
+  }
+
+  /** raster transformation to perform at request time */
+  def rasterFunction(render: String): MultibandTile => Tile = render match {
+    case "ndvi" =>
+      tile : MultibandTile =>
+        tile.convert(DoubleConstantNoDataCellType)
+          .combineDouble(R_BAND, NIR_BAND) { (r, ir) => Calculations.ndvi(r, ir) }
+    case "ndwi" =>
+      tile: MultibandTile =>
+        tile.convert(DoubleConstantNoDataCellType)
+          .combineDouble(G_BAND, NIR_BAND) { (g, ir) => Calculations.ndwi(g, ir) }
+    case _ => ???
+  }
+
   override implicit val system = ActorSystem("tutorial-system")
   override implicit val executor = system.dispatcher
   override implicit val materializer = ActorMaterializer()
@@ -58,74 +77,64 @@ trait Service {
     HttpResponse(entity = HttpEntity(ContentType(MediaTypes.`image/png`), png.bytes))
 
   def root =
-    pathPrefix(Segment / IntNumber / IntNumber / IntNumber) { (render, zoom, x, y) =>
-      complete {
-        Future {
-          // Read in the tile at the given z/x/y coordinates.
-          val tileOpt: Option[MultibandTile] =
-            try {
-              val reader = Serve.valueReader.reader[SpatialKey, MultibandTile](LayerId("landsat", zoom))
-              Some(reader.read(x, y))
-            } catch {
-              case _: ValueNotFoundError =>
-                None
+    pathPrefix(Segment / IntNumber ) { (render, zoom) =>
+      val fn: MultibandTile => Tile = Serve.rasterFunction(render)
+
+      // ZXY route:
+      pathPrefix(IntNumber / IntNumber) { (x, y) =>
+        complete {
+          Future {
+            // Read in the tile at the given z/x/y coordinates.
+            val tileOpt: Option[MultibandTile] =
+              try {
+                val reader = Serve.valueReader.reader[SpatialKey, MultibandTile](LayerId("landsat", zoom))
+                Some(reader.read(x, y))
+              } catch {
+                case _: ValueNotFoundError =>
+                  None
+              }
+
+            for (tile <- tileOpt) yield {
+              val product: Tile = fn(tile)
+              val cm: ColorMap = Serve.colorMapForRender(render)
+              val png: Png = product.renderPng(cm)
+              pngAsHttpResponse(png)
             }
-          render match {
-            case "ndvi" =>
-              tileOpt.map { tile =>
-                // Compute the NDVI
-                val ndvi =
-                  tile.convert(DoubleConstantNoDataCellType).combineDouble(R_BAND, NIR_BAND) { (r, ir) =>
-                    Calculations.ndvi(r, ir);
-                  }
-                // Render as a PNG
-                val png = ndvi.renderPng(Serve.ndviColorMap)
-                pngAsHttpResponse(png)
-              }
-            case "ndwi" =>
-              tileOpt.map { tile =>
-                // Compute the NDWI
-                val ndwi =
-                  tile.convert(DoubleConstantNoDataCellType).combineDouble(G_BAND, NIR_BAND) { (g, ir) =>
-                    Calculations.ndwi(g, ir)
-                  }
-                // Render as a PNG
-                val png = ndwi.renderPng(Serve.ndwiColorMap)
-                pngAsHttpResponse(png)
-              }
+          }
+        }
+      } ~
+      // Polygonal summary route:
+      pathPrefix("summary") {
+        pathEndOrSingleSlash {
+          post {
+            entity(as[String]) { geoJson =>
+              val poly = geoJson.parseGeoJson[Polygon]
+              val id: LayerId = LayerId("landsat", zoom)
+
+              // Leaflet produces polygon in LatLng, we need to reproject it to layer CRS
+              val layerMetadata = Serve.attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
+              val queryPoly = poly.reproject(LatLng, layerMetadata.crs)
+
+              // Query all tiles that intersect the polygon and build histogram
+              val queryHist = collectionReader
+                .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](id)
+                .where(Intersects(queryPoly))
+                .result // all intersecting tiles have been fetched at this point
+                .withContext(_.mapValues(fn))
+                .polygonalHistogramDouble(queryPoly)
+
+              val result: (Double, Double) =
+                queryHist.minMaxValues().getOrElse((Double.NaN, Double.NaN))
+
+              import spray.json.DefaultJsonProtocol._
+              complete(result)
+            }
           }
         }
       }
+
     } ~
-    pathPrefix("summary" / IntNumber) { zoom =>
-      pathEndOrSingleSlash {
-        post {
-          entity(as[String]) { geoJson =>
-            val poly = geoJson.parseGeoJson[Polygon]
-            val id: LayerId = LayerId("landsat", zoom)
-
-            // Leaflet produces polygon in LatLng, we need to reproject it to layer CRS
-            val layerMetadata = Serve.attributeStore.readMetadata[TileLayerMetadata[SpatialKey]](id)
-            val queryPoly = poly.reproject(LatLng, layerMetadata.crs)
-
-            // Query all tiles that intersect the polygon and build histogram
-            val queryHist = collectionReader
-              .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](id)
-              .where(Intersects(queryPoly))
-              .result // all intersecting tiles have been fetched at this point
-              .polygonalHistogramDouble(queryPoly)
-
-            val result: Array[(Double, Double)] =
-              queryHist.map( band =>
-                band.minMaxValues().getOrElse((Double.NaN, Double.NaN))
-              )
-            // Provides implicit conversion from Array to JSON
-            import spray.json.DefaultJsonProtocol._
-            complete(result)
-          }
-        }
-      }
-    } ~
+    // Static content routes:
     pathEndOrSingleSlash {
       getFromFile("static/index.html")
     } ~
