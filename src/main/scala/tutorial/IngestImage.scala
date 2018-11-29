@@ -63,7 +63,7 @@ object IngestImage {
     // level that the closest match to the resolution of our source image,
     // and derive information such as the full bounding box and data type.
     val (_, rasterMetaData) =
-      TileLayerMetadata.fromRdd(inputRdd, FloatingLayoutScheme(512))
+      TileLayerMetadata.fromRDD(inputRdd, FloatingLayoutScheme(512))
 
     // Use the Tiler to cut our tiles into tiles that are index to a floating layout scheme.
     // We'll repartition it so that there are more partitions to work with, since spark

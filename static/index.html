@@ -1,8 +1,11 @@
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" />
-<link rel="stylesheet" href="leaflet.css" />
-<script src="leaflet.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js" integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA==" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" integrity="sha256-siofc4Uwjlra3YWkwthOn8Uj69cNN4aMug/iOHNiRgs=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css" integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==" crossorigin="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" integrity="sha256-XzD3RpaHPv7lzX9qt+2n1j5cWj48O24KsgaGYpKN8x8=" crossorigin="anonymous" />
 <style type="text/css">
 body, #map {
   height: 100%;
@@ -29,6 +32,33 @@ body, #map {
   L.control.layers(overlayMaps, {}, {collapsed: false}).addTo(map);
   base.addTo(map);
   overlayMaps.NDVI.addTo(map);
+  var drawControl = new L.Control.Draw({
+    draw: {
+      circle: false,
+      marker: false,
+      polyline: false,
+      circlemarker: false
+    }
+  });
+  map.addControl(drawControl);
+
+  map.on(L.Draw.Event.CREATED, function (e) {
+    var type = e.layerType,
+      layer = e.layer;
+    layer.bindPopup("waiting...");
+
+    var feature = layer.toGeoJSON()
+    var postBody = JSON.stringify(feature.geometry)
+    var zoom = map.getZoom()
+    $.post("/ndvi/"+zoom+"/summary", postBody, function (data, status) {
+      var msg = "Zoom: " + zoom + "<br/>" +
+        "NDVI min: "+ data[0] + "<br/>" +
+        "NDVI max: " + data[1];
+      layer.bindPopup(msg)
+    });
+    map.addLayer(layer);
+  });
+
 </script>
 </body>
 </html>
